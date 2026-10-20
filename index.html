@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>新能源 AI 洞察助手 · InsightCopilot</title>
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13z" fill="currentColor"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <h1>新能源 AI 洞察助手</h1>
+      <p>政策 / 会议 / 招标素材 → 结构化决策材料</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="model-chip" id="modelChip">未配置模型</span>
+    <button class="btn btn-ghost" id="btnSettings" title="模型设置">⚙ 设置</button>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- ============ 左侧：输入区 ============ -->
+  <section class="card panel-input">
+    <div class="card-head">
+      <h2>1. 选择任务</h2>
+      <span class="hint">同一份素材，三种产出</span>
+    </div>
+
+    <div class="modes" id="modes">
+      <button class="mode active" data-mode="brief">
+        <span class="mode-ico">📄</span>
+        <span class="mode-name">行业简报</span>
+        <span class="mode-desc">资讯/政策 → 可决策简报</span>
+      </button>
+      <button class="mode" data-mode="minutes">
+        <span class="mode-ico">🗒</span>
+        <span class="mode-name">会议纪要</span>
+        <span class="mode-desc">零散记录 → 行动项闭环</span>
+      </button>
+      <button class="mode" data-mode="tender">
+        <span class="mode-ico">📑</span>
+        <span class="mode-name">招标要点</span>
+        <span class="mode-desc">公告 → 投标作战清单</span>
+      </button>
+    </div>
+
+    <div class="card-head mt">
+      <h2>2. 粘贴素材</h2>
+      <div class="row-gap">
+        <button class="btn btn-link" id="btnSample">载入示例</button>
+        <button class="btn btn-link" id="btnClearInput">清空</button>
+      </div>
+    </div>
+
+    <textarea id="input" spellcheck="false" placeholder="把政策原文、行业资讯、会议记录、录音转写文本或招标公告粘贴到这里……
+（本工具只在浏览器本地处理，素材不会上传到任何第三方服务器，除模型调用外）"></textarea>
+
+    <div class="input-meta">
+      <span id="charCount">0 字</span>
+      <span class="dot">·</span>
+      <span>建议 300 字以上，信息越完整产出越准</span>
+    </div>
+
+    <div class="options">
+      <label>
+        <span>行业方向</span>
+        <select id="industry">
+          <option>综合能源</option>
+          <option>光伏</option>
+          <option>储能</option>
+          <option>虚拟电厂</option>
+          <option>双碳 / 电力市场</option>
+        </select>
+      </label>
+      <label>
+        <span>详细程度</span>
+        <select id="verbosity">
+          <option value="简洁">简洁（表格为主）</option>
+          <option value="标准" selected>标准</option>
+          <option value="详细">详细（含分析推演）</option>
+        </select>
+      </label>
+    </div>
+
+    <button class="btn btn-primary btn-generate" id="btnGenerate">
+      <span id="genLabel">生成分析结果</span>
+      <kbd>Ctrl</kbd><kbd>↵</kbd>
+    </button>
+    <p class="tip">未配置 API Key 时会展示内置示例结果，可直接用于演示。</p>
+  </section>
+
+  <!-- ============ 右侧：输出区 ============ -->
+  <section class="card panel-output">
+    <div class="card-head">
+      <h2>3. 产出结果 <span class="tag" id="outTag">行业简报</span></h2>
+      <div class="row-gap">
+        <button class="btn btn-ghost" id="btnCopy">复制</button>
+        <button class="btn btn-ghost" id="btnExport">导出 .md</button>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span id="status">待生成</span>
+      <span id="metrics"></span>
+    </div>
+
+    <article class="output" id="output">
+      <div class="empty">
+        <div class="empty-ico">⚡</div>
+        <p><strong>还没有结果</strong></p>
+        <p>左侧粘贴素材 → 选择任务 → 生成</p>
+        <p class="empty-sub">输出为 Markdown，可直接复制进飞书 / 腾讯文档 / PPT 大纲</p>
+      </div>
+    </article>
+
+    <details class="promptbox">
+      <summary>查看本轮使用的提示词模板（Prompt 工程）</summary>
+      <pre id="promptView"></pre>
+    </details>
+  </section>
+</main>
+
+<!-- ============ 历史记录 ============ -->
+<section class="card history-card">
+  <div class="card-head">
+    <h2>历史记录</h2>
+    <button class="btn btn-link" id="btnClearHistory">清空历史</button>
+  </div>
+  <div class="history" id="history">
+    <p class="history-empty">暂无记录。生成的结果会自动保存在本机浏览器。</p>
+  </div>
+</section>
+
+<footer class="footer">
+  <span>新能源 AI 洞察助手 · 零依赖单页应用</span>
+  <span>数据仅存于本机 localStorage · 模型请求直连你配置的服务商</span>
+</footer>
+
+<!-- ============ 设置弹窗 ============ -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-mask" data-close></div>
+  <div class="modal-body">
+    <div class="modal-head">
+      <h3>模型设置</h3>
+      <button class="btn btn-ghost" data-close>✕</button>
+    </div>
+    <p class="modal-tip">支持所有 OpenAI 兼容接口。Key 只保存在本机浏览器，不会上传。</p>
+
+    <label class="field">
+      <span>快速选择</span>
+      <select id="preset">
+        <option value="">— 自定义 —</option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Base URL</span>
+      <input id="baseUrl" placeholder="https://api.deepseek.com/v1" />
+    </label>
+
+    <label class="field">
+      <span>API Key</span>
+      <input id="apiKey" type="password" placeholder="sk-..." />
+    </label>
+
+    <label class="field">
+      <span>模型名称</span>
+      <input id="modelName" placeholder="deepseek-chat" />
+    </label>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnTest">测试连接</button>
+      <button class="btn btn-primary" id="btnSaveCfg">保存</button>
+    </div>
+    <p class="test-result" id="testResult"></p>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
